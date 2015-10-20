@@ -1,6 +1,7 @@
 package edu.ucla.nesl.android.workoutrecorder;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -8,6 +9,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 
 import java.io.PrintWriter;
@@ -19,7 +21,8 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     private static final String TAG = "BGService";
     private final IBinder mBinder = new MyBinder();
 
-    // Make everything static so that each bind will get the same SensorManager and PrintWriter
+    // Make everything static so that each bind will get
+    // the same SensorManager, PrintWriter, and Wakelock
     private static SensorManager mSensorManager;
     private static ArrayList<Sensor> sensors = new ArrayList<>();
     private static Map<Integer, PrintWriter> sensorType2Logger = new HashMap<>();
@@ -28,6 +31,8 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     private static PrintWriter loggerGyro;
     private static PrintWriter loggerMag;
     private static PrintWriter loggerGrav;
+
+    private static PowerManager.WakeLock wakeLock;
 
     public BGDataCollectionService() {
     }
@@ -63,6 +68,10 @@ public class BGDataCollectionService extends Service implements SensorEventListe
 
     public void startRecording(String timestring) {
         Log.i(TAG, "start recording");
+
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = pm.newWakeLock( PowerManager.PARTIAL_WAKE_LOCK, "MyWakelook");
+        wakeLock.acquire();
 
         mSensorManager = ((SensorManager) getSystemService(SENSOR_SERVICE));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
@@ -100,6 +109,10 @@ public class BGDataCollectionService extends Service implements SensorEventListe
                 sensorType2Logger.get(sensor_id).close();
             } catch (Exception e) {
             }
+        }
+
+        if (wakeLock != null) {
+            wakeLock.release();
         }
     }
 
