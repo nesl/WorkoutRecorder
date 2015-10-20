@@ -25,3 +25,15 @@ proguard/
 
 # Log Files
 *.log
+
+.gradle
+/local.properties
+/.idea/workspace.xml
+/.idea/libraries
+.DS_Store
+/captures
+.idea/
+gradle.properties
+gradle/
+gradlew
+gradlew.bat
