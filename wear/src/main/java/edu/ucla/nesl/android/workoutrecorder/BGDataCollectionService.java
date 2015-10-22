@@ -51,7 +51,9 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         try {
             sensorType2Logger.get(sensorType).write(line);
             sensorType2Logger.get(sensorType).flush();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -87,7 +89,9 @@ public class BGDataCollectionService extends Service implements SensorEventListe
             loggerGyro = new PrintWriter(folder_prefix + "gyro.csv");
             loggerMag = new PrintWriter(folder_prefix + "mag.csv");
             loggerGrav = new PrintWriter(folder_prefix + "grav.csv");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
 
         sensorType2Logger.put(Sensor.TYPE_ACCELEROMETER,  loggerAcc);
@@ -107,9 +111,14 @@ public class BGDataCollectionService extends Service implements SensorEventListe
             try {
                 sensorType2Logger.get(sensor_id).flush();
                 sensorType2Logger.get(sensor_id).close();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
+                e.printStackTrace();
             }
         }
+
+        sensors.clear();
+        sensorType2Logger.clear();
 
         if (wakeLock != null) {
             wakeLock.release();
