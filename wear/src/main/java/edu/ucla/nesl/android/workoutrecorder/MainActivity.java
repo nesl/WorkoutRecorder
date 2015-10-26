@@ -16,7 +16,7 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
     private TextView mTextView;
-    private BGDataCollectionService serviceInstance = null;
+    // private BGDataCollectionService serviceInstance = null;
     private static final String TAG = "Activity";
     // Set format for date and time
     private static TimeString mTimestring = new TimeString();
@@ -52,35 +52,33 @@ public class MainActivity extends Activity {
                 }
             }
         });
+
+        // Start the service
+        Intent intent = new Intent(this, BGDataCollectionService.class);
+        startService(intent);
     }
 
     public void onStartClicked(View view) {
         Log.i(TAG, "start clicked");
-        // Start recording
-        if (serviceInstance != null) {
-            mTracking = true;
-            mTime = mTimestring.currentTimeForDisplay();
-            serviceInstance.startRecording(mTimestring.currentTimeForFile());
-            mTextView.setText("Tracking started at " + mTime);
-        }
+        mTracking = true;
+        mTime = mTimestring.currentTimeForDisplay();
+        BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
+        mTextView.setText("Tracking started at " + mTime);
     }
 
     public void onStopClicked(View view) {
         Log.i(TAG, "stop clicked");
-        // Stop recording
-        if (serviceInstance != null) {
-            serviceInstance.stopRecording();
-            mTextView.setText("Tracking stopped");
-            mTracking = false;
-            mTime = null;
-        }
+        BGDataCollectionService.stopRecording();
+        mTextView.setText("Tracking stopped");
+        mTracking = false;
+        mTime = null;
     }
 
     protected void onPause() {
         super.onPause();
         // Unbind to service on pause
-        unbindService(mConnection);
-        serviceInstance = null;
+//        unbindService(mConnection);
+//        serviceInstance = null;
         // Save current recording state to shared preference
         SharedPreferences sharedPref = getSharedPreferences(
                 getString(R.string.preference_file_key), Context.MODE_PRIVATE);
@@ -97,21 +95,21 @@ public class MainActivity extends Activity {
 
     protected void onResume() {
         super.onResume();
-        // Bind to service on resume
-        Intent intent= new Intent(this, BGDataCollectionService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+//        // Bind to service on resume
+//        Intent intent= new Intent(this, BGDataCollectionService.class);
+//        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className, IBinder b) {
-            BGDataCollectionService.MyBinder binder = (BGDataCollectionService.MyBinder) b;
-            serviceInstance = binder.getService();
-            Log.i(TAG, "service connected");
-        }
-
-        public void onServiceDisconnected(ComponentName className) {
-            serviceInstance = null;
-            Log.i(TAG, "service DISconnected");
-        }
-    };
+//    private ServiceConnection mConnection = new ServiceConnection() {
+//        public void onServiceConnected(ComponentName className, IBinder b) {
+//            BGDataCollectionService.MyBinder binder = (BGDataCollectionService.MyBinder) b;
+//            serviceInstance = binder.getService();
+//            Log.i(TAG, "service connected");
+//        }
+//
+//        public void onServiceDisconnected(ComponentName className) {
+//            serviceInstance = null;
+//            Log.i(TAG, "service DISconnected");
+//        }
+//    };
 }

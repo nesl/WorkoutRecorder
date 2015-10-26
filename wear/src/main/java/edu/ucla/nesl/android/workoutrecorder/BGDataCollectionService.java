@@ -11,6 +11,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+import android.os.Vibrator;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -32,10 +33,22 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     private static PrintWriter loggerMag;
     private static PrintWriter loggerGrav;
 
+    private static Vibrator v;
+    private static BGDataCollectionService mContext;
+
     private static PowerManager.WakeLock wakeLock;
 
     public BGDataCollectionService() {
+
     }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "Received start id " + startId + ": " + intent);
+        mContext = this;
+        return START_STICKY;
+    }
+
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
@@ -68,21 +81,22 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         }
     }
 
-    public void startRecording(String timestring) {
+    public static void startRecording(String timestring) {
         Log.i(TAG, "start recording");
 
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock( PowerManager.PARTIAL_WAKE_LOCK, "MyWakelook");
         wakeLock.acquire();
 
-        mSensorManager = ((SensorManager) getSystemService(SENSOR_SERVICE));
+        mSensorManager = ((SensorManager) mContext.getSystemService(SENSOR_SERVICE));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY));
 
-        String folder_prefix = "/sdcard/wear_"
-                + timestring + "_";
+        v = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
+
+        String folder_prefix = "/sdcard/wear_" + timestring + "_";
 
         try {
             loggerAcc = new PrintWriter(folder_prefix + "acc.csv");
@@ -103,10 +117,12 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         registerAllSensors();
     }
 
-    public void stopRecording() {
+    public static void stopRecording() {
         Log.i(TAG, "stop recording");
 
         unregisterAllSensors();
+        mSensorManager = null;
+
         for (int sensor_id : sensorType2Logger.keySet()) {
             try {
                 sensorType2Logger.get(sensor_id).flush();
@@ -125,16 +141,18 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         }
     }
 
-    private void registerAllSensors() {
+    private static void registerAllSensors() {
         for (Sensor sensor: sensors) {
-            mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST);
+            mSensorManager.registerListener(mContext, sensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
+        v.vibrate(500);
     }
 
-    private void unregisterAllSensors() {
+    private static void unregisterAllSensors() {
         for (Sensor sensor: sensors) {
-            mSensorManager.unregisterListener(this, sensor);
+            mSensorManager.unregisterListener(mContext, sensor);
         }
+        v.vibrate(1000);
     }
 
     @Override

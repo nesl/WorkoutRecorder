@@ -15,7 +15,7 @@
         android:id="@+id/button1"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="30dp"
         android:onClick="onStartClicked"/>
 
     <TextView android:id="@+id/text" android:layout_width="wrap_content"
@@ -29,6 +29,6 @@
         android:id="@+id/button2"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="30dp"
         android:onClick="onStopClicked"/>
 </RelativeLayout>
