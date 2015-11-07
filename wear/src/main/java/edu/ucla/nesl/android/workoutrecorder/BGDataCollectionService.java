@@ -13,6 +13,8 @@ import android.os.PowerManager;
 import android.util.Log;
 import android.os.Vibrator;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,13 +27,13 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     // Make everything static so that each bind will get
     // the same SensorManager, PrintWriter, and Wakelock
     private static SensorManager mSensorManager;
-    private static ArrayList<Sensor> sensors = new ArrayList<>();
-    private static Map<Integer, PrintWriter> sensorType2Logger = new HashMap<>();
+    private static ArrayList<Sensor> sensors = null;
+    private static Map<Integer, BufferedWriter> sensorType2Logger = null;
 
-    private static PrintWriter loggerAcc;
-    private static PrintWriter loggerGyro;
-    private static PrintWriter loggerMag;
-    private static PrintWriter loggerGrav;
+    private static BufferedWriter loggerAcc;
+    private static BufferedWriter loggerGyro;
+    private static BufferedWriter loggerMag;
+    private static BufferedWriter loggerGrav;
 
     private static Vibrator v;
     private static BGDataCollectionService mContext;
@@ -88,6 +90,9 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         wakeLock = pm.newWakeLock( PowerManager.PARTIAL_WAKE_LOCK, "MyWakelook");
         wakeLock.acquire();
 
+        sensors = new ArrayList<>();
+        sensorType2Logger = new HashMap<>();
+
         mSensorManager = ((SensorManager) mContext.getSystemService(SENSOR_SERVICE));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER));
         sensors.add(mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE));
@@ -99,22 +104,24 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         String folder_prefix = "/sdcard/wear_" + timestring + "_";
 
         try {
-            loggerAcc = new PrintWriter(folder_prefix + "acc.csv");
-            loggerGyro = new PrintWriter(folder_prefix + "gyro.csv");
-            loggerMag = new PrintWriter(folder_prefix + "mag.csv");
-            loggerGrav = new PrintWriter(folder_prefix + "grav.csv");
+            loggerAcc = new BufferedWriter(new FileWriter(folder_prefix + "acc.csv"));
+            loggerGyro = new BufferedWriter(new FileWriter(folder_prefix + "gyro.csv"));
+            loggerMag = new BufferedWriter(new FileWriter(folder_prefix + "mag.csv"));
+            loggerGrav = new BufferedWriter(new FileWriter(folder_prefix + "grav.csv"));
         }
         catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, e.toString());
         }
 
-        sensorType2Logger.put(Sensor.TYPE_ACCELEROMETER,  loggerAcc);
+        sensorType2Logger.put(Sensor.TYPE_ACCELEROMETER, loggerAcc);
         sensorType2Logger.put(Sensor.TYPE_GYROSCOPE,      loggerGyro);
         sensorType2Logger.put(Sensor.TYPE_MAGNETIC_FIELD, loggerMag);
         sensorType2Logger.put(Sensor.TYPE_GRAVITY, loggerGrav);
 
         // register sensors
         registerAllSensors();
+        v.vibrate(500);
     }
 
     public static void stopRecording() {
@@ -130,29 +137,32 @@ public class BGDataCollectionService extends Service implements SensorEventListe
             }
             catch (Exception e) {
                 e.printStackTrace();
+                Log.e(TAG, e.toString());
             }
         }
 
         sensors.clear();
+        sensors = null;
         sensorType2Logger.clear();
+        sensorType2Logger = null;
 
         if (wakeLock != null) {
             wakeLock.release();
         }
+
+        v.vibrate(1000);
     }
 
     private static void registerAllSensors() {
         for (Sensor sensor: sensors) {
             mSensorManager.registerListener(mContext, sensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
-        v.vibrate(500);
     }
 
     private static void unregisterAllSensors() {
         for (Sensor sensor: sensors) {
             mSensorManager.unregisterListener(mContext, sensor);
         }
-        v.vibrate(1000);
     }
 
     @Override
