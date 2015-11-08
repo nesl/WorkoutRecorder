@@ -46,32 +46,43 @@ public class MainActivity extends Activity {
                 if (mTracking) {
                     mTime = sharedPref.getString(getString(R.string.saved_rec_time), "");
                     mTextView.setText("Tracking started at " + mTime);
-                }
-                else {
+                } else {
                     mTextView.setText("Tracking stopped");
                 }
             }
         });
 
-        // Start the service
-        Intent intent = new Intent(this, BGDataCollectionService.class);
-        startService(intent);
+        if (!mTracking) {
+            // Start the service
+            Intent intent = new Intent(this, BGDataCollectionService.class);
+            startService(intent);
+        }
     }
 
     public void onStartClicked(View view) {
         Log.i(TAG, "start clicked");
-        mTracking = true;
-        mTime = mTimestring.currentTimeForDisplay();
-        BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
-        mTextView.setText("Tracking started at " + mTime);
+        if (!mTracking) {
+            mTracking = true;
+            mTime = mTimestring.currentTimeForDisplay();
+            BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
+            mTextView.setText("Tracking started at " + mTime);
+        }
+        else {
+            Log.w(TAG, "Tracking already started!");
+        }
     }
 
     public void onStopClicked(View view) {
         Log.i(TAG, "stop clicked");
-        BGDataCollectionService.stopRecording();
-        mTextView.setText("Tracking stopped");
-        mTracking = false;
-        mTime = null;
+        if (mTracking) {
+            BGDataCollectionService.stopRecording();
+            mTextView.setText("Tracking stopped");
+            mTracking = false;
+            mTime = null;
+        }
+        else {
+            Log.w(TAG, "Tracking already stopped!");
+        }
     }
 
     protected void onPause() {

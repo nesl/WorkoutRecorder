@@ -15,7 +15,6 @@ import android.os.Vibrator;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +33,8 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     private static BufferedWriter loggerGyro;
     private static BufferedWriter loggerMag;
     private static BufferedWriter loggerGrav;
+
+    private static long c[] = new long[20];
 
     private static Vibrator v;
     private static BGDataCollectionService mContext;
@@ -56,6 +57,11 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     public void onSensorChanged(SensorEvent sensorEvent) {
         // for recording the time offset
         int sensorType = sensorEvent.sensor.getType();
+        c[sensorType]++;
+        if (c[sensorType] >= 1000) {
+            Log.i(TAG, "type " + sensorType + " reached 1000 values.");
+            c[sensorType] = 0;
+        }
         long now = System.currentTimeMillis();
 
         String line = now + "," + sensorEvent.timestamp;
@@ -169,5 +175,13 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     public IBinder onBind(Intent intent) {
         Log.i(TAG, "onBind");
         return mBinder;
+    }
+
+    @Override
+    public void onDestroy () {
+        super.onDestroy();
+        if (mSensorManager != null) {
+            stopRecording();
+        }
     }
 }
