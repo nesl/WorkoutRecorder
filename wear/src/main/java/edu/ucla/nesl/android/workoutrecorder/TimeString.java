@@ -9,6 +9,7 @@ import java.util.Date;
 public class TimeString {
     private SimpleDateFormat formatForFile = new SimpleDateFormat("yyyyMMdd_HHmmss");
     private SimpleDateFormat formatForDisplay = new SimpleDateFormat("MM/dd HH:mm:ss");
+    private SimpleDateFormat timeForDisplay = new SimpleDateFormat("HH:mm:ss");
 
     public String currentTimeForFile() {
         return formatForFile.format(new Date());
@@ -16,6 +17,10 @@ public class TimeString {
 
     public String currentTimeForDisplay() {
         return formatForDisplay.format(new Date());
+    }
+
+    public String currentTimeOnlyForDisplay() {
+        return timeForDisplay.format(new Date());
     }
 
     public String ms2watch(long ms) {

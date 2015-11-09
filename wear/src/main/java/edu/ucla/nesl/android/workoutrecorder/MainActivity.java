@@ -1,13 +1,16 @@
 package edu.ucla.nesl.android.workoutrecorder;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.wearable.view.WatchViewStub;
 import android.util.Log;
 import android.view.View;
@@ -23,6 +26,8 @@ public class MainActivity extends Activity {
     // Current state of the recording
     private boolean mTracking = false;
     private String mTime = null;
+    private TextView mAccCounterTextView;
+    private static long mAccCounter = 0;
 
 
     @Override
@@ -38,6 +43,7 @@ public class MainActivity extends Activity {
             @Override
             public void onLayoutInflated(WatchViewStub stub) {
                 mTextView = (TextView) stub.findViewById(R.id.text);
+                mAccCounterTextView = (TextView) stub.findViewById(R.id.text1);
 
                 // Get saved recording state from shared preference
                 SharedPreferences sharedPref = getSharedPreferences(
@@ -102,13 +108,26 @@ public class MainActivity extends Activity {
             editor.putString(getString(R.string.saved_rec_time), null);
         }
         editor.commit();
+
+        // Unregister broadcast receiver
+        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+        bManager.unregisterReceiver(accCounterReceiver);
+        Log.i(TAG, "Receiver un-registered.");
     }
 
     protected void onResume() {
         super.onResume();
+
 //        // Bind to service on resume
 //        Intent intent= new Intent(this, BGDataCollectionService.class);
 //        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
+        // Register broadcast receiver
+        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BGDataCollectionService.ACC_1K_ACTION);
+        bManager.registerReceiver(accCounterReceiver, intentFilter);
+        Log.i(TAG, "Receiver registered.");
     }
 
 //    private ServiceConnection mConnection = new ServiceConnection() {
@@ -123,4 +142,15 @@ public class MainActivity extends Activity {
 //            Log.i(TAG, "service DISconnected");
 //        }
 //    };
+
+    private BroadcastReceiver accCounterReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "broadcast received " + intent.getAction());
+            if(intent.getAction().equals(BGDataCollectionService.ACC_1K_ACTION)) {
+                mAccCounter++;
+                mAccCounterTextView.setText("Acc: 1k x " + mAccCounter + "@" + new TimeString().currentTimeOnlyForDisplay());
+            }
+        }
+    };
 }

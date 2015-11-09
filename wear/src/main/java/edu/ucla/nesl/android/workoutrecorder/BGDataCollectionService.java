@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.os.Vibrator;
 
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BGDataCollectionService extends Service implements SensorEventListener {
+    public static final String ACC_1K_ACTION = "acc_1k";
     private static final String TAG = "BGService";
     private final IBinder mBinder = new MyBinder();
 
@@ -59,6 +61,12 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         int sensorType = sensorEvent.sensor.getType();
         c[sensorType]++;
         if (c[sensorType] >= 1000) {
+            if (sensorType == 1) {
+                Intent intent = new Intent();
+                intent.setAction(ACC_1K_ACTION);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                Log.i(TAG, "Sending broadcast...");
+            }
             Log.i(TAG, "type " + sensorType + " reached 1000 values.");
             c[sensorType] = 0;
         }
@@ -127,7 +135,7 @@ public class BGDataCollectionService extends Service implements SensorEventListe
 
         // register sensors
         registerAllSensors();
-        v.vibrate(500);
+        v.vibrate(100);
     }
 
     public static void stopRecording() {
@@ -156,7 +164,7 @@ public class BGDataCollectionService extends Service implements SensorEventListe
             wakeLock.release();
         }
 
-        v.vibrate(1000);
+        v.vibrate(300);
     }
 
     private static void registerAllSensors() {

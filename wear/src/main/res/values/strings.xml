@@ -10,4 +10,5 @@
     <string name="preference_file_key">App_Shared_Pref</string>
     <string name="saved_rec_flag">Rec_Flag</string>
     <string name="saved_rec_time">Rec_Time</string>
+    <string name="acc_counter_round">Acc: 1k x 0</string>
 </resources>
