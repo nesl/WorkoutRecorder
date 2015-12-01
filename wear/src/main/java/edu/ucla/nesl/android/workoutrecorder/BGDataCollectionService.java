@@ -22,6 +22,19 @@ import java.util.Map;
 
 public class BGDataCollectionService extends Service implements SensorEventListener {
     public static final String ACC_1K_ACTION = "acc_1k";
+    private final int ACC_REPORT_PERIOD = 1000;  // samples
+
+    public static final String GRAV_250_ACTION = "grav_250";
+    private final int GRAV_REPORT_PERIOD = 250;  // samples
+
+    public static final String GRAV_VALUE_UNCHANGED_WARNING = "grav_unchanged_warning";
+
+    private final int GRAV_REPEATING_WARNING_THRES = 100;
+    private int grav_repeating_cnt = 0;
+    private float last_grav_x = 0f;
+    private float last_grav_y = 0f;
+    private float last_grav_z = 0f;
+
     private static final String TAG = "BGService";
     private final IBinder mBinder = new MyBinder();
 
@@ -60,22 +73,47 @@ public class BGDataCollectionService extends Service implements SensorEventListe
         // for recording the time offset
         int sensorType = sensorEvent.sensor.getType();
         c[sensorType]++;
-        if (c[sensorType] >= 1000) {
-            if (sensorType == 1) {
+        if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+            if (c[sensorType] >= ACC_REPORT_PERIOD) {
                 Intent intent = new Intent();
                 intent.setAction(ACC_1K_ACTION);
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-                Log.i(TAG, "Sending broadcast...");
+                Log.i(TAG, "Sending broadcast ACC1K");
+                c[sensorType] = 0;
             }
-            Log.i(TAG, "type " + sensorType + " reached 1000 values.");
-            c[sensorType] = 0;
+        } else if (sensorType == Sensor.TYPE_GRAVITY) {
+            if (c[sensorType] >= GRAV_REPORT_PERIOD) {
+                Intent intent = new Intent();
+                intent.setAction(GRAV_250_ACTION);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                Log.i(TAG, "Sending broadcast GRAV250");
+                c[sensorType] = 0;
+            }
+            if (sensorEvent.values[0] == last_grav_x && sensorEvent.values[1] == last_grav_y
+                    && sensorEvent.values[2] == last_grav_z) {
+                grav_repeating_cnt++;
+                if (grav_repeating_cnt >= GRAV_REPEATING_WARNING_THRES) {
+                    Intent intent = new Intent();
+                    intent.setAction(GRAV_VALUE_UNCHANGED_WARNING);
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                    Log.i(TAG, "Sending broadcast GRAV250");
+                    c[sensorType] = 0;
+                    grav_repeating_cnt = 0;
+                }
+            } else {
+                grav_repeating_cnt = 0;
+            }
+            last_grav_x = sensorEvent.values[0];
+            last_grav_y = sensorEvent.values[1];
+            last_grav_z = sensorEvent.values[2];
+            //Log.i("Sensor", last_grav_x + "," + last_grav_y + "," + last_grav_z);
         }
         long now = System.currentTimeMillis();
 
         String line = now + "," + sensorEvent.timestamp;
         for (float v : sensorEvent.values)
             line += "," + v;
-        line += "\n";  // for JSON stringify
+        line += "\n";
 
         try {
             sensorType2Logger.get(sensorType).write(line);

@@ -2,32 +2,44 @@ package edu.ucla.nesl.android.workoutrecorder;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.os.IBinder;
+import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.wearable.view.WatchViewStub;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
     private TextView mTextView;
+
     // private BGDataCollectionService serviceInstance = null;
     private static final String TAG = "Activity";
+
     // Set format for date and time
-    private static TimeString mTimestring = new TimeString();
+    private static final TimeString mTimestring = new TimeString();
+
+    // Animation time
+    private final long FLASHING_PERIOD = 500;  // ms
+    private final long GRIVATY_WAITING_PERIOD = 15000;  // ms, should receive event every 10 secs.
+
+    // UI elements
+    private RelativeLayout mainLayout;
+
     // Current state of the recording
     private boolean mTracking = false;
     private String mTime = null;
     private TextView mAccCounterTextView;
-    private static long mAccCounter = 0;
+    private static int mSensorCounter = 0;
+
+    private Handler handler = new Handler();
 
 
     @Override
@@ -44,6 +56,8 @@ public class MainActivity extends Activity {
             public void onLayoutInflated(WatchViewStub stub) {
                 mTextView = (TextView) stub.findViewById(R.id.text);
                 mAccCounterTextView = (TextView) stub.findViewById(R.id.text1);
+
+                mainLayout = (RelativeLayout) stub.findViewById(R.id.layout);
 
                 // Get saved recording state from shared preference
                 SharedPreferences sharedPref = getSharedPreferences(
@@ -72,6 +86,7 @@ public class MainActivity extends Activity {
             mTime = mTimestring.currentTimeForDisplay();
             BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
             mTextView.setText("Tracking started at " + mTime);
+            gravityWatchDog.start();
         }
         else {
             Log.w(TAG, "Tracking already started!");
@@ -85,6 +100,8 @@ public class MainActivity extends Activity {
             mTextView.setText("Tracking stopped");
             mTracking = false;
             mTime = null;
+            warningScreenFlash.stop();
+            gravityWatchDog.stop();
         }
         else {
             Log.w(TAG, "Tracking already stopped!");
@@ -125,7 +142,9 @@ public class MainActivity extends Activity {
         // Register broadcast receiver
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BGDataCollectionService.ACC_1K_ACTION);
+        //intentFilter.addAction(BGDataCollectionService.ACC_1K_ACTION);
+        intentFilter.addAction(BGDataCollectionService.GRAV_250_ACTION);
+        intentFilter.addAction(BGDataCollectionService.GRAV_VALUE_UNCHANGED_WARNING);
         bManager.registerReceiver(accCounterReceiver, intentFilter);
         Log.i(TAG, "Receiver registered.");
     }
@@ -147,10 +166,78 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.i(TAG, "broadcast received " + intent.getAction());
-            if(intent.getAction().equals(BGDataCollectionService.ACC_1K_ACTION)) {
-                mAccCounter++;
-                mAccCounterTextView.setText("Acc: 1k x " + mAccCounter + "@" + new TimeString().currentTimeOnlyForDisplay());
+            if (intent.getAction().equals(BGDataCollectionService.GRAV_250_ACTION)) {
+                mSensorCounter += 250;
+                mAccCounterTextView.setText(String.format("Grav: %.2fk @%s", mSensorCounter / 1000f,
+                        mTimestring.currentTimeOnlyForDisplay()));
+                gravityWatchDog.cease();
+            } else if (intent.getAction().equals(BGDataCollectionService.GRAV_VALUE_UNCHANGED_WARNING)) {
+                mAccCounterTextView.setText(String.format("FATAL: gravity values are not updated"));
             }
         }
     };
+
+
+    private class WarningScreenFlash {
+        private boolean isFlashing = false;
+        private int currentColor = Color.BLACK;
+
+        public void start() {
+            if (!isFlashing) {
+                handler.postDelayed(flashProcedure, FLASHING_PERIOD);
+                isFlashing = true;
+            }
+        }
+
+        public void stop() {
+            isFlashing = false;
+            handler.removeCallbacks(flashProcedure);
+            currentColor = Color.BLACK;
+            mainLayout.setBackgroundColor(Color.BLACK);
+        }
+
+        private Runnable flashProcedure = new Runnable() {
+            @Override
+            public void run() {
+                if (currentColor == Color.BLACK) {
+                    currentColor = Color.RED;
+                } else {
+                    currentColor = Color.BLACK;
+                }
+                mainLayout.setBackgroundColor(currentColor);
+                handler.postDelayed(flashProcedure, FLASHING_PERIOD);
+            }
+        };
+    }
+    private WarningScreenFlash warningScreenFlash = new WarningScreenFlash();
+
+
+    private class GravityCounterWatchDog {
+        private boolean flagWarningSent = false;
+
+        public void start() {
+            if (!flagWarningSent)
+                handler.postDelayed(raiseWarningTimer, GRIVATY_WAITING_PERIOD);
+        }
+
+        public void cease() {
+            handler.removeCallbacks(raiseWarningTimer);
+            if (!flagWarningSent)
+                handler.postDelayed(raiseWarningTimer, GRIVATY_WAITING_PERIOD);
+        }
+
+        public void stop() {
+            flagWarningSent = false;
+            handler.removeCallbacks(raiseWarningTimer);
+        }
+
+        private Runnable raiseWarningTimer = new Runnable() {
+            @Override
+            public void run() {
+                flagWarningSent = true;
+                warningScreenFlash.start();
+            }
+        };
+    }
+    private GravityCounterWatchDog gravityWatchDog = new GravityCounterWatchDog();
 }
