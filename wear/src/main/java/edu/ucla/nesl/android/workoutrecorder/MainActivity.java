@@ -85,7 +85,7 @@ public class MainActivity extends Activity {
             mTracking = true;
             mTime = mTimestring.currentTimeForDisplay();
             BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
-            mTextView.setText("Tracking started at " + mTime);
+            mTextView.setText("Started at " + mTime);
             gravityWatchDog.start();
         }
         else {
