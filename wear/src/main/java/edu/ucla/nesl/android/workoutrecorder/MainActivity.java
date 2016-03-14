@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
 
     // Animation time
     private final long FLASHING_PERIOD = 500;  // ms
-    private final long GRIVATY_WAITING_PERIOD = 10000;  // ms, should receive event every 10 secs.
+    private final long GRIVATY_WAITING_PERIOD = 15000;  // ms, should receive event every 10 secs, 5 sec tolerence
 
     // UI elements
     private RelativeLayout mainLayout;

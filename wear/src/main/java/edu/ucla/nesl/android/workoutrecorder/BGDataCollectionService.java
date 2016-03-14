@@ -206,8 +206,10 @@ public class BGDataCollectionService extends Service implements SensorEventListe
     }
 
     private static void registerAllSensors() {
+
         for (Sensor sensor: sensors) {
-            mSensorManager.registerListener(mContext, sensor, SensorManager.SENSOR_DELAY_GAME);
+            //mSensorManager.registerListener(mContext, sensor, SensorManager.SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(mContext, sensor, 1000000 / 25);
         }
     }
 
