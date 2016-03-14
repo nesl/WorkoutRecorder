@@ -14,6 +14,7 @@ import android.support.wearable.view.WatchViewStub;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -38,6 +39,8 @@ public class MainActivity extends Activity {
     private String mTime = null;
     private TextView mAccCounterTextView;
     private static int mSensorCounter = 0;
+    private Button startButton;
+    private Button stopButton;
 
     private Handler handler = new Handler();
 
@@ -58,6 +61,8 @@ public class MainActivity extends Activity {
                 mAccCounterTextView = (TextView) stub.findViewById(R.id.text1);
 
                 mainLayout = (RelativeLayout) stub.findViewById(R.id.layout);
+                startButton = (Button) stub.findViewById(R.id.button1);
+                stopButton = (Button) stub.findViewById(R.id.button2);
 
                 // Get saved recording state from shared preference
                 SharedPreferences sharedPref = getSharedPreferences(
@@ -66,8 +71,10 @@ public class MainActivity extends Activity {
                 if (mTracking) {
                     mTime = sharedPref.getString(getString(R.string.saved_rec_time), "");
                     mTextView.setText("Tracking started at " + mTime);
+                    startButton.setEnabled(false);
                 } else {
                     mTextView.setText("Tracking stopped");
+                    stopButton.setEnabled(false);
                 }
             }
         });
@@ -87,6 +94,8 @@ public class MainActivity extends Activity {
             BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
             mTextView.setText("Tracking started at " + mTime);
             gravityWatchDog.start();
+            startButton.setEnabled(false);
+            stopButton.setEnabled(true);
         }
         else {
             Log.w(TAG, "Tracking already started!");
@@ -97,11 +106,13 @@ public class MainActivity extends Activity {
         Log.i(TAG, "stop clicked");
         if (mTracking) {
             BGDataCollectionService.stopRecording();
-            mTextView.setText("Tracking stopped");
+            mTextView.setText("Tracking stopped (" + mTime + ")");
             mTracking = false;
             mTime = null;
             warningScreenFlash.stop();
             gravityWatchDog.stop();
+            startButton.setEnabled(true);
+            stopButton.setEnabled(false);
         }
         else {
             Log.w(TAG, "Tracking already stopped!");
