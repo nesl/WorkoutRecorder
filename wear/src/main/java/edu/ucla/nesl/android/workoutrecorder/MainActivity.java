@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
 
     // Animation time
     private final long FLASHING_PERIOD = 500;  // ms
-    private final long GRIVATY_WAITING_PERIOD = 15000;  // ms, should receive event every 10 secs.
+    private final long GRIVATY_WAITING_PERIOD = 10000;  // ms, should receive event every 10 secs.
 
     // UI elements
     private RelativeLayout mainLayout;
@@ -92,7 +92,7 @@ public class MainActivity extends Activity {
             mTracking = true;
             mTime = mTimestring.currentTimeForDisplay();
             BGDataCollectionService.startRecording(mTimestring.currentTimeForFile());
-            mTextView.setText("Tracking started at " + mTime);
+            mTextView.setText("Started at " + mTime);
             gravityWatchDog.start();
             startButton.setEnabled(false);
             stopButton.setEnabled(true);
