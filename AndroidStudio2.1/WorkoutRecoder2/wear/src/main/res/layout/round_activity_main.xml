@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="#000000"
     tools:context=".MainActivity"
     tools:deviceIds="wear_round"
     android:id="@+id/layout">
@@ -28,6 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/text_round"
+            android:textColor="#ffffff"
             android:layout_gravity="center"/>
 
         <TextView android:id="@+id/text1"
